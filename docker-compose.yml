@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - otel-go
+  
+  service-a:
+    container_name: service-a
+    hostname: service-a
+    image: service-a
+    build:
+      dockerfile: Dockerfile-service-a
+      context: .
+      tags:
+        - service-a
+    ports:
+      - 8080:8080
+    depends_on:
+      - zipkin
+    networks:
+      - otel-go
+    environment:
+      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
+
+  service-b:
+    container_name: service-b
+    hostname: service-b
+    image: service-b
+    build:
+      dockerfile: Dockerfile-service-b
+      context: .
+      tags:
+        - service-b
+    ports:
+      - 8081:8081
+    depends_on:
+      - service-a
+      - zipkin
+    networks:
+      - otel-go
+    environment:
+      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
+      - WEATHER_API_KEY=xxxxx
+
+networks:
+  otel-go:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.11.0.0/24
