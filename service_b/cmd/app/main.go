@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	otel.InitTracer(os.Getenv("ZIPKIN_URL"), "service_b")
+	otel.InitTracer(os.Getenv("OTEL_COLLECTOR_URL"), "service_b")
 
 	mux := http.NewServeMux()
 

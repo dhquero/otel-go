@@ -1,21 +1,27 @@
 package otel
 
 import (
+	"context"
 	"log"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 )
 
-func InitTracer(zipkinEndpoint string, serviceName string) {
-	exporter, err := zipkin.New(zipkinEndpoint)
+func InitTracer(collectorEndpoint string, serviceName string) {
+	ctx := context.Background()
+
+	exporter, err := otlptracehttp.New(ctx,
+		otlptracehttp.WithEndpoint(collectorEndpoint),
+		otlptracehttp.WithInsecure(),
+	)
 
 	if err != nil {
-		log.Fatalf("Error creating Zipkin exporter: %v", err)
+		log.Fatalf("Error creating OTLP exporter: %v", err)
 	}
 
 	resourceName, err := resource.New(
@@ -24,16 +30,17 @@ func InitTracer(zipkinEndpoint string, serviceName string) {
 			semconv.ServiceName(serviceName),
 		),
 	)
+
 	if err != nil {
 		log.Fatalf("Error creating resource: %v", err)
 	}
 
-	bsp := trace.NewBatchSpanProcessor(exporter)
+	batchSpan := trace.NewBatchSpanProcessor(exporter)
 
 	traceProvider := trace.NewTracerProvider(
 		trace.WithSampler(trace.AlwaysSample()),
 		trace.WithResource(resourceName),
-		trace.WithSpanProcessor(bsp),
+		trace.WithSpanProcessor(batchSpan),
 	)
 
 	otel.SetTracerProvider(traceProvider)
