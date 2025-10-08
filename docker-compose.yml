@@ -8,6 +8,21 @@ services:
       - "9411:9411"
     networks:
       - otel-go
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    container_name: otel-collector
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "55681:55681"
+    volumes:
+      - ./docker/otel/config.yaml:/etc/otelcol-contrib/config.yaml
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    depends_on:
+      - zipkin
+    networks:
+      - otel-go
   
   service-a:
     container_name: service-a
@@ -22,10 +37,11 @@ services:
       - 8080:8080
     depends_on:
       - zipkin
+      - otel-collector
     networks:
       - otel-go
     environment:
-      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
+      - OTEL_COLLECTOR_URL=otel-collector:4318
 
   service-b:
     container_name: service-b
@@ -41,10 +57,11 @@ services:
     depends_on:
       - service-a
       - zipkin
+      - otel-collector
     networks:
       - otel-go
     environment:
-      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
+      - OTEL_COLLECTOR_URL=otel-collector:4318
       - WEATHER_API_KEY=xxxxx
 
 networks:
