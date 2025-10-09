@@ -42,6 +42,10 @@ func (g *GetWeatherUseCase) Get(zipCodeInputDTO CepInputDTO) (*TemperatureOutput
 
 	weatherAPI := g.ServiceBRepository.Get(zipCodeInputDTO.Cep)
 
+	if weatherAPI.City == "" {
+		return nil, errors.New("can not find zipcode")
+	}
+
 	return &TemperatureOutputDTO{
 		City:       weatherAPI.City,
 		Celsius:    weatherAPI.Celsius,
