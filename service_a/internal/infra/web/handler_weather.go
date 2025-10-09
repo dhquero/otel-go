@@ -33,6 +33,12 @@ func HandleWeather(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if errorMessage == "can not find zipcode" {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
